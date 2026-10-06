@@ -52,6 +52,8 @@ export default function World() {
   const { simple } = usePreferences()
   const { state } = useScrollState()
   const highway = state.active.id === 'S01'
+  // The S00 visual base uses DOM layers only.
+  if (state.active.id === 'S00') return null
   return <div className="world" style={{ zIndex: highway ? 2 : 0 }} aria-hidden="true">
     {simple ? highway ? null : <div className="static-placeholder">Static scene fallback</div> : <CanvasBoundary><Canvas shadows={highway ? { type: PCFShadowMap } : false} style={{ pointerEvents: highway ? 'none' : undefined }} dpr={[1, 1.5]} frameloop="demand" camera={{ position: [0, 0, 7], fov: 45 }} fallback={<p className="fallback">3D unavailable.</p>}><>{highway && <fogExp2 attach="fog" args={['#131e2b', .018]} />}<Suspense fallback={null}><PlaceholderWorld />{highway && <Suspense fallback={null}><HighwayWorld /></Suspense>}</Suspense></></Canvas></CanvasBoundary>}
   </div>

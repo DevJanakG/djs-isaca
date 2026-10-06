@@ -11,6 +11,6 @@ export default function App() {
     <Suspense fallback={null}><World /></Suspense>
     <header><details><summary>Hunter’s Journal</summary><nav aria-label="Scenes">{scenes.map(scene => <a key={scene.id} href={`#${scene.id}`}>{scene.id} {scene.title}</a>)}</nav></details></header>
     <Story />
-    {import.meta.env.DEV && <DevelopmentHud />}
+    {import.meta.env.DEV && new URLSearchParams(window.location.search).get('debug') === '1' && <DevelopmentHud />}
   </ScrollProvider>
 }
