@@ -3,7 +3,7 @@ import { usePreferences } from '../architecture/preferences'
 export default function DevelopmentHud() {
   const { state } = useScrollState()
   const { mobile, reducedMotion } = usePreferences()
-  return <aside className="hud" aria-label="Development scroll diagnostics">
+  return <aside className={`hud${state.active.id === 'S00' ? ' hud--intro' : ''}`} aria-label="Development scroll diagnostics">
     <strong>Development HUD</strong>
     <div>Global: {state.global.toFixed(4)}</div>
     <div>Active: {state.active.id} · {state.active.title}</div>
