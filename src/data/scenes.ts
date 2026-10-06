@@ -1,6 +1,6 @@
 export const scenes = [
   { id: 'S00', title: 'Intro / Darkness', start: 0, end: .08, description: 'Recruitment introduction placeholder.' },
-  { id: 'S01', title: 'Highway', start: .08, end: .23, description: 'Road journey placeholder.' },
+  { id: 'S01', title: 'Title Sting', start: .08, end: .23, description: 'A 4.1-second supernatural title sting, ending at the closed bunker shutter.' },
   { id: 'S02', title: 'Case File', start: .23, end: .34, description: 'Event introduction placeholder.' },
   { id: 'S03', title: 'Investigation Board', start: .34, end: .48, description: 'Cases and investigations placeholder.' },
   { id: 'S04', title: 'Archive', start: .48, end: .57, description: 'Benefits and bounties placeholder.' },

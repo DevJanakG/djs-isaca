@@ -1,0 +1,157 @@
+/* Approved composition. A single GSAP timeline owns all temporal effects. */
+.s01-sting {
+  --title-ink: #e6e0d3;
+  --smoke-opacity: .12;
+  --seal-opacity: .48;
+  --presenter-opacity: .65;
+  --interference-opacity: .045;
+  --grain-opacity: .032;
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  isolation: isolate;
+  overflow: hidden;
+  background: #000000;
+  color: #d0cdc5;
+  pointer-events: none;
+}
+
+/* Hide in CSS as well as GSAP, including the very first React paint. */
+.s01-sting [data-sting-layer] { opacity: 0; visibility: hidden; }
+.s01-sting[data-phase='playing'] .s01-smoke { will-change: transform, opacity; }
+.s01-black, .s01-smoke, .s01-vignette, .s01-interference, .s01-grain, .s01-flash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.s01-black { z-index: 0; background: #000000; }
+.s01-smoke {
+  z-index: 1;
+  object-fit: cover;
+  object-position: 50% 48%;
+  filter: grayscale(1) brightness(.72);
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(ellipse 58% 50% at 50% 50%, #000 24%, transparent 100%);
+}
+.s01-vignette {
+  z-index: 2;
+  background: radial-gradient(ellipse at 50% 50%, transparent 18%, rgb(0 0 0 / .55) 58%, #000 100%),
+    linear-gradient(0deg, rgb(0 0 0 / .75), transparent 32%, transparent 68%, rgb(0 0 0 / .65));
+}
+.s01-seal, .s01-seal-copy {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: min(42svh, 78vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(-7deg);
+  color: #9c978d;
+  /* The source has fractured strokes; this mask adds uneven ink erosion. */
+  mask-image: url('/s01/images/distress.svg');
+  mask-size: 173px 173px;
+  mask-repeat: repeat;
+}
+.s01-seal svg, .s01-seal-copy svg { display: block; width: 100%; height: 100%; }
+.s01-typography, .s01-typography-copy {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  width: 92%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.s01-presenter, .s01-presenter-copy {
+  margin: 0 0 2.6svh;
+  padding-left: .32em;
+  font: 400 clamp(.6rem, .75vw, .82rem)/1.2 'IBM Plex Mono', monospace;
+  letter-spacing: .32em;
+  color: #aaa69d;
+}
+.s01-title, .s01-title-copy {
+  margin: 0;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: min(9.2vw, 20svh);
+  line-height: .78;
+  letter-spacing: -.045em;
+  color: var(--title-ink);
+  white-space: nowrap;
+  /* Reinforce the serif ink without introducing a halo or metallic relief. */
+  -webkit-text-stroke: .004em currentColor;
+}
+.s01-title span, .s01-title-copy span {
+  display: inline-block;
+  transform: scale(.92, .9);
+  transform-origin: center;
+  /* Film grain supplies wear without stacking a tiled SVG mask under blur. */
+}
+.s01-interference {
+  z-index: 5;
+  mix-blend-mode: normal;
+  background: repeating-linear-gradient(0deg, transparent 0 4px, rgb(211 210 203 / .18) 4px 5px, transparent 5px 9px),
+    linear-gradient(0deg, transparent 37%, rgb(203 201 192 / .12) 37.1%, transparent 37.3%, transparent 64%, rgb(203 201 192 / .1) 64.2%, transparent 64.6%);
+}
+.s01-grain {
+  z-index: 6;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background: url('/s01/images/grain.svg') repeat;
+  background-size: 256px 256px;
+  /* Fixed fine monochrome grain: texture without drifting noise or grey haze. */
+}
+.s01-flash { z-index: 7; background: #deded6; }
+.s01-shutter-cue { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+.s01-shutter-line {
+  position: absolute; left: 50%; bottom: 0;
+  width: 15vw; height: 1px;
+  transform: translateX(-50%); background: #d8b16b;
+}
+.s01-shutter-haze {
+  position: absolute; left: 50%; bottom: 0;
+  width: 72vw; height: min(11svh, 100px);
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, #d8b16b 0%, rgb(216 177 107 / .3) 24%, transparent 72%);
+}
+.s01-sting .s01-shutter-cue--settled .s01-shutter-line { width: 65vw; height: 3px; opacity: .65; visibility: visible; }
+.s01-sting .s01-shutter-cue--settled .s01-shutter-haze { opacity: .1; visibility: visible; }
+.s01-sound {
+  position: absolute; z-index: 9; right: 1.25rem; top: 1.25rem;
+  border: 0; padding: .5rem; background: transparent; color: #b6b0a5;
+  font: 400 .6rem/1.5 'IBM Plex Mono', monospace; letter-spacing: .15em;
+  opacity: 0; visibility: hidden; pointer-events: auto; cursor: pointer;
+}
+.s01-accessible-title {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+/* Suppress site chrome only while the title card occupies the screen. */
+body:has(.s01-sting) header, body:has(.s01-sting) .hud { visibility: hidden; }
+@media (max-width: 767px) {
+  .s01-seal, .s01-seal-copy { width: min(40svh, 72vw); mask-image: none; }
+  .s01-title, .s01-title-copy { font-size: min(18.5vw, 18svh); }
+  .s01-presenter, .s01-presenter-copy { font-size: .56rem; letter-spacing: .24em; margin-bottom: 2svh; }
+  /* One smoke image, one filter, and one tear band on the small screen. */
+  .s01-smoke { object-position: 53% 50%; filter: brightness(.62); }
+}
+/* Also keep the title card legible on short landscape viewports. */
+@media (max-height: 480px) {
+  .s01-presenter, .s01-presenter-copy { margin-bottom: 3svh; font-size: .5rem; }
+}
+
+/* A: full-size decorative copies revealed only through narrow scan bands. */
+.s01-shear { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.s01-shear-band {
+  position: absolute; inset: 0; background: #000;
+  opacity: 0; visibility: hidden;
+}
+.s01-shear-band--0 { clip-path: inset(43.2% 0 55.8% 0); }
+.s01-shear-band--1 { clip-path: inset(50.8% 0 48.3% 0); }
+.s01-shear-band--2 { clip-path: inset(56.3% 0 42.5% 0); }
+.s01-seal-copy { opacity: .48; }
+.s01-presenter-copy { opacity: .65; }
+/* B: opaque exposure loss covers every visual layer immediately. */
+.s01-failure-black { position: absolute; inset: 0; z-index: 10; background: #000; pointer-events: none; }

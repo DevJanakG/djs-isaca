@@ -1,26 +1,30 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { getAudioEnabled, setAudioEnabled, subscribeAudio, toggleAudio, useAudioEnabled } from '../../architecture/audioState'
 
 export function useIntroAudio(active: boolean) {
   const forest = useRef<HTMLAudioElement | null>(null)
   const impact = useRef<HTMLAudioElement | null>(null)
-  const enabledRef = useRef(false)
   const activeRef = useRef(active)
-  const [enabled, setEnabled] = useState(false)
+  const enabled = useAudioEnabled()
   useLayoutEffect(() => { activeRef.current = active }, [active])
 
   const startForest = useCallback(() => {
     const audio = forest.current
-    if (!audio || !enabledRef.current || !activeRef.current || document.hidden) return
+    if (!audio || !getAudioEnabled() || !activeRef.current || document.hidden) return
     void audio.play().then(() => {
-      if (!enabledRef.current || !activeRef.current || document.hidden) audio.pause()
+      if (!getAudioEnabled() || !activeRef.current || document.hidden) audio.pause()
     }).catch((error: unknown) => {
-      if (!activeRef.current || !enabledRef.current ||
+      if (!activeRef.current || !getAudioEnabled() ||
         (error instanceof DOMException && error.name === 'AbortError')) return
       // A denied playback request leaves a usable, explicit sound control.
-      enabledRef.current = false
-      setEnabled(false)
+      setAudioEnabled(false)
     })
   }, [])
+
+  useEffect(() => subscribeAudio(() => {
+    if (getAudioEnabled()) startForest()
+    else { forest.current?.pause(); impact.current?.pause() }
+  }), [startForest])
 
   useEffect(() => {
     forest.current = new Audio('/audio/s00-forest.mp3')
@@ -63,22 +67,15 @@ export function useIntroAudio(active: boolean) {
     }
   }, [active, startForest])
 
-  const toggle = useCallback(() => {
-    enabledRef.current = !enabledRef.current
-    setEnabled(enabledRef.current)
-    // Call play inside the gesture itself, including on Safari/mobile.
-    if (enabledRef.current) startForest()
-    else { forest.current?.pause(); impact.current?.pause() }
-  }, [startForest])
-
   const cueImpact = useCallback(() => {
     const audio = impact.current
-    if (!audio || !enabledRef.current || !activeRef.current || document.hidden) return
+    if (!audio || !getAudioEnabled() || !activeRef.current || document.hidden) return
     audio.currentTime = 0
     void audio.play().then(() => {
-      if (!enabledRef.current || !activeRef.current || document.hidden) audio.pause()
+      if (!getAudioEnabled() || !activeRef.current || document.hidden) audio.pause()
     }).catch(() => { /* The optional impact never interrupts the scene. */ })
   }, [])
 
-  return { enabled, toggle, cueImpact }
+  // The shared subscription starts playback synchronously inside this gesture.
+  return { enabled, toggle: toggleAudio, cueImpact }
 }

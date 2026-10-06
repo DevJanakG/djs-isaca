@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="173" height="173" viewBox="0 0 173 173">
+  <filter id="ink-wear" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".56" numOctaves="2" seed="17" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0"/>
+    <feComponentTransfer><feFuncA type="table" tableValues=".45 .87 .98 1 1"/></feComponentTransfer>
+  </filter>
+  <path d="M0 0h173v173H0z" fill="white" filter="url(#ink-wear)"/>
+</svg>
