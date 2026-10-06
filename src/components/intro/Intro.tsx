@@ -73,26 +73,38 @@ export default function Intro() {
     if (!active || !element) return
     let cancelled = false
     let context: gsap.Context | undefined
+    const fontFaces = ['600 48px "Cormorant Garamond"', '400 12px "IBM Plex Mono"']
+    const fontsReady = Promise.allSettled(fontFaces.map(face => document.fonts.load(face)))
 
     if (completed.current || reducedMotion) {
       context = gsap.context(() => {
         gsap.set('.intro-entrance-black', { opacity: 0 })
-        gsap.set('.intro-presenter', { autoAlpha: .7 })
-        gsap.set('.intro-title', { autoAlpha: 1 })
-        gsap.set('.intro-join', { autoAlpha: .75 })
-        gsap.set('.intro-scroll', { autoAlpha: .4 })
       }, element)
       completed.current = true
-      setIntroReady(true)
-      return () => context?.revert()
+      // Keep the final scenery immediately visible, but show text only once
+      // its real fonts are ready so reduced motion never swaps visible faces.
+      const revealFinalText = () => {
+        if (cancelled) return
+        context?.add(() => {
+          gsap.set('.intro-presenter', { autoAlpha: .7 })
+          gsap.set('.intro-title', { autoAlpha: 1 })
+          gsap.set('.intro-join', { autoAlpha: .75 })
+          gsap.set('.intro-scroll', { autoAlpha: .4 })
+        })
+        setIntroReady(true)
+      }
+      // On return, set the already-loaded typography before the exit effect
+      // applies its scroll position, rather than overwriting that fade later.
+      if (fontFaces.every(face => document.fonts.check(face))) revealFinalText()
+      else void fontsReady.then(revealFinalText)
+      return () => { cancelled = true; context?.revert() }
     }
 
     // Start the clock only once the actual scene images can be painted.
     const images = Array.from(element.querySelectorAll('img'))
     void Promise.allSettled([
       ...images.map(image => image.decode()),
-      document.fonts.load('600 48px "Cormorant Garamond"'),
-      document.fonts.load('400 12px "IBM Plex Mono"'),
+      fontsReady,
     ]).then(() => {
       if (cancelled) return
       context = gsap.context(() => {
@@ -105,9 +117,12 @@ export default function Intro() {
         const center = '.intro-hunter--center'
         const atmosphere = '.intro-distant-fog, .intro-near-fog'
 
-        master.set('.intro-forest', {
-          filter: 'saturate(.65) brightness(.25) contrast(1.08)', scale: 1.025,
-        }, 0)
+        // Explicit percent centering avoids rounding-dependent transform
+        // inference on fractional mobile image widths.
+        master.set('.intro-hunter', { xPercent: -50, x: 0 }, 0)
+          .set('.intro-forest', {
+            filter: 'saturate(.65) brightness(.25) contrast(1.08)', scale: 1.025,
+          }, 0)
           .set(atmosphere, { opacity: 0 }, 0)
           .set(left, { x: -element.clientWidth * .18, y: element.clientHeight * .02 }, 0)
           .set(right, { x: element.clientWidth * .18, y: element.clientHeight * .02 }, 0)
@@ -144,9 +159,9 @@ export default function Intro() {
             autoAlpha: .7, y: 0, duration: .5, ease: 'power2.out',
           }, 3.75)
           .fromTo('.intro-title', {
-            autoAlpha: 0, y: 12, filter: 'blur(5px)', letterSpacing: '.16em',
+            autoAlpha: 0, y: 12, filter: 'blur(5px)', '--title-tracking': '.16em',
           }, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', letterSpacing: '.04em',
+            autoAlpha: 1, y: 0, filter: 'blur(0px)', '--title-tracking': '.04em',
             duration: .9, ease: 'power2.out',
           }, 4.25)
           .fromTo('.intro-join', { autoAlpha: 0 }, {
