@@ -2,6 +2,12 @@ import gsap from 'gsap'
 import type { BunkerCue } from './useBunkerAudio'
 
 export const SHUTTER_DURATION = 6
+const lateralLoads = [
+  { at: .42, duration: .12, offset: .3 },
+  { at: 1.03, duration: .1, offset: -.25 },
+  { at: 1.79, duration: .14, offset: .35 },
+  { at: 2.43, duration: .12, offset: -.3 },
+]
 
 // Integral of a positive industrial velocity profile: long acceleration,
 // nearly steady travel, then a short load/resistance region. No overshoot.
@@ -31,16 +37,31 @@ export function createShutterTimeline(root: HTMLElement, options: {
   const shutterY = gsap.quickSetter(curtain, 'y', 'px')
   const edgeY = gsap.quickSetter(edge, 'y', 'px')
   const sourceY = gsap.quickSetter(source, 'y', 'px')
+  const shutterX = gsap.quickSetter(curtain, 'x', 'px')
+  const edgeX = gsap.quickSetter(edge, 'x', 'px')
   let height = root.clientHeight || window.innerHeight
   // The approved housing is 9vh: stop with just 3px of metal below it,
   // rather than pushing the complete edge behind the housing at exactly 93%.
   let stopFraction = (height - (housing.offsetHeight || height * .09) - 6) / height
-  const mechanics = { open: 0, jolt: 0 }
+  const mechanics = { open: 0, jolt: 0, travelClock: 0 }
   const renderOpening = () => {
-    const rise = mechanics.open * height - mechanics.jolt
+    const t = mechanics.travelClock
+    const envelope = reducedMotion ? 0 : Math.max(0, Math.min(1, t / .12, (2.9 - t) / .16))
+    // A rigid curtain under motor load: bounded, repeatable subpixel motion.
+    const vibration = envelope * (.65 * Math.sin(t * 37) + .15 * Math.sin(t * 59))
+    let jitter = 0
+    for (const load of lateralLoads) {
+      const pulse = (t - load.at) / load.duration
+      if (pulse > 0 && pulse < 1) jitter = envelope * load.offset * Math.sin(pulse * Math.PI)
+    }
+    const rise = mechanics.open * height - mechanics.jolt - vibration
     shutterY(-rise)
     edgeY(-rise)
     sourceY(-rise)
+    shutterX(jitter)
+    edgeX(jitter)
+    root.dataset.vibration = vibration.toFixed(3)
+    root.dataset.jitter = jitter.toFixed(3)
     const revealed = Math.max(3, rise + 3)
     dust.style.clipPath = `inset(${Math.max(0, height - revealed)}px 0 0)`
     forward.style.top = `${height - revealed}px`
@@ -94,9 +115,14 @@ export function createShutterTimeline(root: HTMLElement, options: {
     .to(select('.s02-forward-spill'), { opacity: .26, duration: .4 }, .9)
     .to(select('.s02-light-haze'), { opacity: .16, duration: .4 }, .9)
     .to(select('.s02-bunker-darkness'), { opacity: .62, duration: .4 }, .9)
-    .to(select('.s02-dust-light'), { opacity: .6, duration: .4 }, .9)
+    .to(select('.s02-dust-light'), { opacity: .9, duration: .4 }, .9)
     .addLabel('main-opening', 1.3)
+    .to(mechanics, { travelClock: 2.9, duration: 2.9 }, 1.3)
     .to(mechanics, { open: .78, duration: 2.3, ease: industrialTravel }, 1.3)
+    .to(edge, { '--edge-reflection': .22, duration: 2.3 }, 1.3)
+    .to(edge, { '--edge-shadow-depth': '11px', '--edge-shadow-opacity': .27, duration: 1.1 }, 1.3)
+    .to(edge, { '--edge-shadow-depth': '7px', '--edge-shadow-opacity': .42, duration: .65 }, 2.4)
+    .to(edge, { '--edge-shadow-depth': '9px', '--edge-shadow-opacity': .32, duration: .55 }, 3.05)
     .to(select('.s02-bunker-darkness'), { opacity: .09, duration: 2.3, ease: 'power1.out' }, 1.3)
     .to(select('.s02-bunker'), { filter: 'contrast(1.025)', duration: 2.3 }, 1.3)
     .to(select('.s02-forward-spill'), { opacity: .035, duration: 2.3 }, 1.3)
@@ -104,6 +130,7 @@ export function createShutterTimeline(root: HTMLElement, options: {
     .to(select('.s02-light-haze'), { opacity: .015, duration: 2.3 }, 1.3)
     .addLabel('resistance', 3.6)
     .to(mechanics, { open: () => stopFraction, duration: .6, ease: 'power2.out' }, 3.6)
+    .to(edge, { '--edge-reflection': .27, '--edge-shadow-depth': '5px', '--edge-shadow-opacity': .22, duration: .6 }, 3.6)
     .to(levels, { groan: .075, motor: .13, duration: .6, onUpdate: syncVolumes }, 3.6)
     .to(select('.s02-bunker-darkness'), { opacity: .025, duration: .6 }, 3.6)
     .to(select('.s02-forward-spill, .s02-light-source'), { opacity: 0, duration: .6 }, 3.6)

@@ -33,13 +33,20 @@ occludes it while a separate black exposure overlay and contrast change the
 visible light. Dust is clipped below the moving edge. Reduced motion omits
 jolts, vibration, dust travel and the camera step while preserving reveal timing.
 
-Dust uses 16 fixed DOM motes (7 on mobile), sized 1.1–2.8px with a warm-grey
+Dust uses 16 fixed DOM motes (7 on mobile), sized 1.8–3px with a warm-grey
 color and subtle blur. Independent CSS drift loops last 8–18 seconds, moving
 only 3–8px sideways and 12–24px upward per cycle. Fades hide each loop reset.
 A feathered central light mask excludes dark corners; the shutter-driven clip
 expands the illuminated vertical region. Hidden scenes/tabs pause drift, and
 reduced motion renders stationary motes. No particle canvas or extra GSAP
 timeline is used.
+
+During loaded travel only (1.30–4.20s), a clock inside the same master drives
+bounded rigid-metal vibration (at most 0.8px vertically) and four short lateral
+load pulses (0.25–0.35px). Both taper to zero before the stop. Curtain and lower
+edge share these offsets; rails and camera do not. Reduced motion omits them.
+The lower edge gains a feathered tungsten reflection while its downward shadow
+changes gently with the opening, then remains still during the room hold.
 
 ## S03 contract
 
