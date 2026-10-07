@@ -1,6 +1,5 @@
 import TitleSting from './title-sting/TitleSting'
 import Intro from './intro/Intro'
-import ShutterTransition from './shutter-transition/ShutterTransition'
 import { motion } from 'motion/react'
 import { scenes } from '../data/scenes'
 import { event } from '../data/event'
@@ -9,7 +8,7 @@ export default function Story() {
   const { reducedMotion } = usePreferences()
   return <main id="scroll-story" tabIndex={-1}>
     {scenes.map((scene, index) => <section key={scene.id} id={scene.id} aria-labelledby={`${scene.id}-title`} style={{ height: `${(scene.end - scene.start) * 2000}vh` }}>
-      {index === 0 ? <Intro /> : index === 1 ? <TitleSting /> : scene.id === 'S02' ? <ShutterTransition /> : <div className="scene-content">
+      {index === 0 ? <Intro /> : index === 1 ? <TitleSting /> : scene.id === 'S02' ? <h2 id="S02-title" className="s02-accessible-title">Bunker shutter</h2> : <div className="scene-content">
         <p>{scene.id} · {(scene.start * 100).toFixed(0)}–{(scene.end * 100).toFixed(0)}%</p>
         {index === 0 ? <h1 id={`${scene.id}-title`}>{scene.title}</h1> : <h2 id={`${scene.id}-title`}>{scene.title}</h2>}
         <p>{scene.description}</p>

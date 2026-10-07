@@ -2,6 +2,14 @@ import gsap from 'gsap'
 import type { BunkerCue } from './useBunkerAudio'
 
 export const SHUTTER_DURATION = 6
+export const MOBILE_SHUTTER_DURATION = 5
+export const REDUCED_SHUTTER_DURATION = 1.2
+
+// Shorten only the main loaded travel by one second. Latch, motor startup and
+// first opening retain their exact timestamps; later visuals/audio move together.
+const mobileTime = (time: number) => time <= 1.3 ? time
+  : time >= 3.6 ? time - (SHUTTER_DURATION - MOBILE_SHUTTER_DURATION)
+    : 1.3 + (time - 1.3) * (1.3 / 2.3)
 const lateralLoads = [
   { at: .42, duration: .12, offset: .3 },
   { at: 1.03, duration: .1, offset: -.25 },
@@ -20,13 +28,14 @@ const industrialTravel = (t: number) => {
 
 export function createShutterTimeline(root: HTMLElement, options: {
   reducedMotion: boolean
+  mobile: boolean
   cue: (name: BunkerCue) => void
   levels: Record<BunkerCue, number>
   syncVolumes: () => void
   stopMechanics: () => void
   onComplete: () => void
 }) {
-  const { reducedMotion, cue, levels, syncVolumes, stopMechanics, onComplete } = options
+  const { reducedMotion, mobile, cue, levels, syncVolumes, stopMechanics, onComplete } = options
   const select = gsap.utils.selector(root)
   const curtain = root.querySelector<HTMLElement>('.s02-shutter')!
   const edge = root.querySelector<HTMLElement>('.s02-bottom-edge')!
@@ -40,7 +49,7 @@ export function createShutterTimeline(root: HTMLElement, options: {
   const shutterX = gsap.quickSetter(curtain, 'x', 'px')
   const edgeX = gsap.quickSetter(edge, 'x', 'px')
   let height = root.clientHeight || window.innerHeight
-  // The approved housing is 9vh: stop with just 3px of metal below it,
+  // Stop with just 3px of metal below the desktop/mobile housing,
   // rather than pushing the complete edge behind the housing at exactly 93%.
   let stopFraction = (height - (housing.offsetHeight || height * .09) - 6) / height
   const mechanics = { open: 0, jolt: 0, travelClock: 0 }
@@ -77,7 +86,7 @@ export function createShutterTimeline(root: HTMLElement, options: {
   window.addEventListener('resize', resize)
   const timeline = gsap.timeline({
     paused: true, defaults: { ease: 'none' },
-    onComplete: () => { mechanics.open = stopFraction; renderOpening(); onComplete() },
+    onComplete: () => { stopMechanics(); mechanics.open = stopFraction; renderOpening(); onComplete() },
     onUpdate: renderOpening,
     onInterrupt: () => window.removeEventListener('resize', resize),
   })
@@ -90,7 +99,32 @@ export function createShutterTimeline(root: HTMLElement, options: {
     .set(select('.s02-dust-light, .s02-forward-spill'), { opacity: 0 }, 0)
     .set(select('.s02-light-seam'), { opacity: .65 }, 0)
     .set(select('.s02-bunker'), { scale: 1, y: 0, filter: 'contrast(1.08)' }, 0)
-    .addLabel('latch-release', .25)
+
+  if (reducedMotion) {
+    // Preserve S01's black/tungsten handoff, then use one short, calm reveal.
+    // No travelClock, jolts, rail motion, resistance or camera tweens exist in
+    // this path. Keep the same final lighting and original room DOM for S03.
+    timeline.addLabel('quick-reveal', .25)
+      .call(() => { cue('latch'); cue('motor'); cue('groan') }, [], .25)
+      .to(mechanics, { open: () => stopFraction, duration: .8, ease: 'power1.out' }, .25)
+      .to(curtain, { opacity: 0, duration: .8, ease: 'power1.out' }, .25)
+      .to(select('.s02-entry-darkness'), { opacity: 0, duration: .8 }, .25)
+      .to(select('.s02-bunker-darkness'), { opacity: .025, duration: .8 }, .25)
+      .to(select('.s02-bunker'), { filter: 'contrast(1.025)', duration: .8 }, .25)
+      .to(select('.s02-light-floor, .s02-light-source'), { opacity: 0, duration: .8 }, .25)
+      .to(dust, { opacity: .9, duration: .8 }, .25)
+      .to(edge, { '--edge-reflection': .27, '--edge-shadow-depth': '5px', '--edge-shadow-opacity': .22, duration: .8 }, .25)
+      .to(levels, { motor: 0, groan: 0, duration: .15, onUpdate: syncVolumes }, .9)
+      .addLabel('room-hold', 1.05)
+      .call(stopMechanics, [], 1.05)
+      .call(() => cue('hum'), [], 1.05)
+      .to(levels, { hum: .1, duration: .15, onUpdate: syncVolumes }, 1.05)
+      .addLabel('bunker-ready', REDUCED_SHUTTER_DURATION)
+    renderOpening()
+    return timeline
+  }
+
+  timeline.addLabel('latch-release', .25)
     .call(() => cue('latch'), [], .25)
 
   if (!reducedMotion) {
@@ -131,7 +165,7 @@ export function createShutterTimeline(root: HTMLElement, options: {
     .addLabel('resistance', 3.6)
     .to(mechanics, { open: () => stopFraction, duration: .6, ease: 'power2.out' }, 3.6)
     .to(edge, { '--edge-reflection': .27, '--edge-shadow-depth': '5px', '--edge-shadow-opacity': .22, duration: .6 }, 3.6)
-    .to(levels, { groan: .075, motor: .13, duration: .6, onUpdate: syncVolumes }, 3.6)
+    .to(levels, { groan: .16, motor: .3, duration: .6, onUpdate: syncVolumes }, 3.6)
     .to(select('.s02-bunker-darkness'), { opacity: .025, duration: .6 }, 3.6)
     .to(select('.s02-forward-spill, .s02-light-source'), { opacity: 0, duration: .6 }, 3.6)
     .addLabel('stop', 4.2)
@@ -148,14 +182,27 @@ export function createShutterTimeline(root: HTMLElement, options: {
     .addLabel('small-step', 4.7)
 
   if (!reducedMotion) {
-    timeline.to(select('.s02-room'), { scale: 1.025, y: '-0.5vh', duration: 1.1, ease: 'power1.inOut' }, 4.7)
-      .to(select('.s02-frame'), { scale: 1.01, duration: 1.1, ease: 'power1.inOut' }, 4.7)
+    timeline.to(select('.s02-room'), { scale: mobile ? 1.015 : 1.025, y: mobile ? '-0.3vh' : '-0.5vh', duration: 1.1, ease: 'power1.inOut' }, 4.7)
+      .to(select('.s02-frame'), { scale: mobile ? 1.006 : 1.01, duration: 1.1, ease: 'power1.inOut' }, 4.7)
   }
 
   timeline.addLabel('ambience', 5.6)
     .call(() => cue('hum'), [], 5.6)
-    .to(levels, { hum: .12, duration: .4, onUpdate: syncVolumes }, 5.6)
+    .to(levels, { hum: .1, duration: .4, onUpdate: syncVolumes }, 5.6)
     .addLabel('bunker-ready', SHUTTER_DURATION)
+  if (mobile) {
+    // Retiming the one paused master includes its zero-duration audio callbacks.
+    // Capture every original endpoint before changing scheduling. Never rebuild
+    // this timeline on resize or change it during playback/S03 handoff.
+    const schedule = timeline.getChildren(false, true, false).map(child => ({
+      child, start: child.startTime(), end: child.startTime() + child.duration(),
+    }))
+    for (const { child, start, end } of schedule) {
+      child.duration(mobileTime(end) - mobileTime(start))
+      child.startTime(mobileTime(start))
+    }
+    for (const [label, time] of Object.entries(timeline.labels)) timeline.addLabel(label, mobileTime(time))
+  }
   renderOpening()
   return timeline
 }

@@ -59,6 +59,31 @@
   object-position: 50% 58%;
 }
 .s02-bunker-darkness { z-index: 2; background: #000; opacity: .96; }
+.s02-anchors { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+.s02-anchor-plane { position: absolute; }
+.s02-anchor { position: absolute; width: 0; height: 0; pointer-events: none; }
+.s02-anchor-marker {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 3px 5px;
+  color: #edd9ac;
+  background: rgb(0 0 0 / .82);
+  font: 11px/1.3 monospace;
+  white-space: nowrap;
+}
+.s02-anchors[data-debug='true'] .s02-anchor::before,
+.s02-anchors[data-debug='true'] .s02-anchor::after {
+  content: '';
+  position: absolute;
+  background: #edd9ac;
+}
+.s02-anchors[data-debug='true'] .s02-anchor::before { left: -5px; top: -.5px; width: 10px; height: 1px; }
+.s02-anchors[data-debug='true'] .s02-anchor::after { left: -.5px; top: -5px; width: 1px; height: 10px; }
+.s02-anchor[data-bunker-anchor='pocketWatch'] .s02-anchor-marker,
+.s02-anchor[data-bunker-anchor='archiveShelf'] .s02-anchor-marker { left: auto; right: 8px; }
+.s02-anchor[data-bunker-anchor='artifact'] .s02-anchor-marker,
+.s02-anchor[data-bunker-anchor='prizeDisplay'] .s02-anchor-marker { top: auto; bottom: 8px; }
 .s02-light-spill { z-index: 6; }
 /* The source stays at S01's settled bottom edge. The visible, foreshortened
    reflection spreads wider toward the viewer; its far extent dies into black.
@@ -146,7 +171,7 @@
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-rows: repeat(16, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--slat-count, 16), minmax(0, 1fr));
   background: #101214;
 }
 .s02-slat {
@@ -160,7 +185,7 @@
   position: absolute;
   inset: 0;
   background-image: url('/s02/shutter/shutter-metal.jpg');
-  background-size: 100% 1600%;
+  background-size: 100% calc(var(--slat-count, 16) * 100%);
   background-repeat: no-repeat;
   filter: grayscale(.9) brightness(calc(.3 * var(--slat-exposure))) contrast(1.08);
   opacity: .72;
@@ -223,10 +248,12 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: url('/s02/shutter/frame-metal.jpg') 50% 50% / 420px 420px;
+  background: url('/s02/shutter/frame-metal.jpg') 50% 50% / cover no-repeat;
   filter: grayscale(.9) brightness(.18);
   opacity: .65;
 }
+.s02-rail--left::before { background-position: 28% 50%; }
+.s02-rail--right::before { background-position: 72% 50%; }
 .s02-rail--left { z-index: 7; left: 0; border-left: 7px solid #000; border-right: 1px solid #242829; box-shadow: 4px 0 9px rgb(0 0 0 / .7); }
 .s02-rail--right { z-index: 8; right: 0; border-right: 7px solid #000; border-left: 1px solid #242829; box-shadow: -4px 0 9px rgb(0 0 0 / .7); }
 .s02-rail-groove {
@@ -316,8 +343,14 @@ body:has(.s02-stage[data-bunker-ready='true']:not([hidden])) #S03 .scene-content
   white-space: nowrap;
 }
 #S02 { border-top: 0; }
+/* Taller desktop ratios need less vertical overscan to preserve the board and
+   far-right display. Tuck the plate's top behind the housing, keep cover fit,
+   and establish this framing before S02 starts; S03 inherits the same surface. */
+@media (min-width: 768px) and (max-aspect-ratio: 17/10) {
+  .s02-room { top: max(0px, calc(var(--housing-height) - 12px)); }
+}
 @media (max-width: 767px) {
-  .s02-stage { --rail-width: 22px; }
+  .s02-stage { --rail-width: 22px; --housing-height: 8svh; }
   .s02-bunker { object-position: 50% 58%; }
   .s02-light-floor { height: 70px; filter: blur(6px); }
   .s02-light-haze { height: 36px; filter: blur(5px); }

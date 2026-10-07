@@ -6,6 +6,7 @@ const files: Record<BunkerCue, string> = {
   latch: 'latch-clang.mp3', motor: 'shutter-open.mp3',
   groan: 'metal-groan.mp3', hum: 'bunker-hum.mp3',
 }
+const initialLevels = () => ({ latch: .35, motor: .35, groan: .12, hum: 0 })
 
 // This hook lives with the retained bunker surface, including throughout S03.
 export function useBunkerAudio() {
@@ -13,16 +14,34 @@ export function useBunkerAudio() {
   const consumed = useRef(new Set<BunkerCue>())
   const interrupted = useRef(new Set<HTMLAudioElement>())
   const generation = useRef(0)
+  const requestId = useRef(0)
+  const owners = useRef(new WeakMap<HTMLAudioElement, number>())
+  const pending = useRef(new Set<HTMLAudioElement>())
+  const mechanicsStopped = useRef(false)
   const present = useRef(false)
-  const levels = useRef({ latch: .26, motor: .22, groan: .025, hum: 0 })
+  const levels = useRef(initialLevels())
 
   const play = useCallback((audio: HTMLAudioElement) => {
-    const request = generation.current
+    if (!present.current || !getAudioEnabled() || document.hidden ||
+      (mechanicsStopped.current && audio !== tracks.current.hum) ||
+      !audio.paused || pending.current.has(audio)) return
+    const requestedGeneration = generation.current
+    const request = ++requestId.current
+    owners.current.set(audio, request)
+    pending.current.add(audio)
     void audio.play().then(() => {
-      if (request !== generation.current || !present.current || !getAudioEnabled() || document.hidden) audio.pause()
+      if (!present.current || !getAudioEnabled() || document.hidden ||
+        (mechanicsStopped.current && audio !== tracks.current.hum)) {
+        audio.pause()
+        return
+      }
+      if (owners.current.get(audio) !== request) return
+      if (requestedGeneration !== generation.current) audio.pause()
     }).catch((error: unknown) => {
-      if (request !== generation.current) return
+      if (requestedGeneration !== generation.current || owners.current.get(audio) !== request) return
       if (error instanceof DOMException && error.name === 'NotAllowedError') setAudioEnabled(false)
+    }).finally(() => {
+      if (owners.current.get(audio) === request) pending.current.delete(audio)
     })
   }, [])
 
@@ -34,24 +53,33 @@ export function useBunkerAudio() {
   }, [])
 
   const stopMechanics = useCallback(() => {
+    mechanicsStopped.current = true
     for (const name of ['latch', 'motor', 'groan'] as const) {
       const audio = tracks.current[name]
-      if (audio) { audio.pause(); interrupted.current.delete(audio) }
+      if (audio) {
+        audio.pause()
+        audio.currentTime = 0
+        pending.current.delete(audio)
+        interrupted.current.delete(audio)
+      }
     }
   }, [])
 
   const stop = useCallback(() => {
     generation.current++
+    pending.current.clear()
+    mechanicsStopped.current = false
     interrupted.current.clear()
     for (const audio of Object.values(tracks.current)) audio.pause()
     consumed.current.clear()
-    levels.current = { latch: .26, motor: .22, groan: .025, hum: 0 }
+    levels.current = initialLevels()
   }, [])
 
   const setPresent = useCallback((value: boolean) => {
     present.current = value
     if (!value) {
       generation.current++
+      pending.current.clear()
       interrupted.current.clear()
       for (const audio of Object.values(tracks.current)) audio.pause()
     } else if (consumed.current.has('hum') && getAudioEnabled() && !document.hidden) {
@@ -71,6 +99,7 @@ export function useBunkerAudio() {
     const unsubscribe = subscribeAudio(() => {
       if (!getAudioEnabled()) {
         generation.current++
+        pending.current.clear()
         interrupted.current.clear()
         for (const audio of Object.values(tracks.current)) audio.pause()
       } else if (present.current && consumed.current.has('hum') && !document.hidden) {
@@ -81,6 +110,7 @@ export function useBunkerAudio() {
     const visibility = () => {
       if (document.hidden) {
         generation.current++
+        pending.current.clear()
         for (const audio of Object.values(tracks.current)) {
           if (!audio.paused && !audio.ended) interrupted.current.add(audio)
           audio.pause()

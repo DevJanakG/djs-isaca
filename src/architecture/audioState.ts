@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
 
-// Request audible autoplay once; browser denial restores the sound control.
-// Explicit mute persists across scenes for the lifetime of this page.
-let audioEnabled = true
+// Audio requires an explicit sound-control gesture. Consent/mute then carries
+// across scenes for the lifetime of this page; autoplay permission is not consent.
+let audioEnabled = false
 const listeners = new Set<() => void>()
 
 export const getAudioEnabled = () => audioEnabled
