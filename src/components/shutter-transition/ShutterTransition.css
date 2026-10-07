@@ -17,6 +17,40 @@
   inset: 0;
 }
 .s02-black { z-index: 0; background: #000; }
+.s02-room { position: absolute; inset: 0; z-index: 1; transform-origin: 50% 58%; }
+.s02-frame { position: absolute; inset: 0; z-index: 5; transform-origin: 50% 0%; }
+.s02-light-source { position: absolute; inset: 0; }
+.s02-entry-darkness {
+  position: absolute;
+  inset: 0 0 3px;
+  z-index: 9;
+  background: #000;
+  opacity: .96;
+}
+.s02-forward-spill {
+  position: absolute;
+  top: 100%;
+  bottom: 0;
+  left: 5%;
+  width: 90%;
+  z-index: 3;
+  opacity: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+}
+.s02-forward-spill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+  background: linear-gradient(to bottom, rgb(229 193 125 / .65), rgb(196 148 77 / .22) 28px, rgb(174 121 57 / .06) 90px, transparent 180px);
+  filter: blur(8px);
+}
+.s02-stage[data-phase='playing'] .s02-shutter,
+.s02-stage[data-phase='playing'] .s02-bottom-edge,
+.s02-stage[data-phase='playing'] .s02-room,
+.s02-stage[data-phase='playing'] .s02-frame { will-change: transform; }
+.s02-stage[data-phase='ready'] { z-index: 0; }
 .s02-bunker {
   z-index: 1;
   width: 100%;
@@ -24,17 +58,42 @@
   object-fit: cover;
   object-position: 50% 58%;
 }
-.s02-bunker-darkness { z-index: 2; background: rgb(0 0 0 / .96); }
-.s02-light-spill { z-index: 3; }
+.s02-bunker-darkness { z-index: 2; background: #000; opacity: .96; }
+.s02-light-spill { z-index: 6; }
+/* The source stays at S01's settled bottom edge. The visible, foreshortened
+   reflection spreads wider toward the viewer; its far extent dies into black.
+   Blur the shaped child, rather than clipping the blur to a hard trapezoid. */
+.s02-light-floor {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 90vw;
+  height: clamp(64px, 12svh, 130px);
+  transform: translateX(-50%);
+  filter: blur(8px);
+  opacity: .34;
+  mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+}
+.s02-light-floor-projection {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
+  background: linear-gradient(to top,
+    rgb(216 177 107 / .85) 0%,
+    rgb(196 148 77 / .55) 10%,
+    rgb(174 121 57 / .2) 30%,
+    rgb(156 104 46 / .04) 58%, transparent 82%);
+}
 .s02-light-haze {
   position: absolute;
   bottom: 0;
   left: 50%;
   width: 72vw;
-  height: min(11svh, 100px);
+  height: min(6svh, 54px);
   transform: translateX(-50%);
-  opacity: .1;
-  background: radial-gradient(ellipse 50% 100% at 50% 100%, #e5c17d 0%, rgb(216 177 107 / .3) 24%, transparent 72%);
+  opacity: .075;
+  filter: blur(7px);
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, #d8b16b 0%, rgb(216 177 107 / .3) 20%, transparent 70%);
 }
 .s02-light-seam {
   position: absolute;
@@ -55,7 +114,7 @@
   filter: blur(.6px);
 }
 
-/* The full curtain can later translate behind the fixed housing; no motion yet. */
+/* Only the curtain translates; this aperture clips it behind the housing. */
 .s02-shutter-opening {
   position: absolute;
   inset: 0 var(--rail-width) var(--seam-height);
@@ -196,11 +255,36 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-body:has(.s02-stage) header, body:has(.s02-stage) .hud { visibility: hidden; }
+body:has(.s02-stage:not([hidden])) header, body:has(.s02-stage:not([hidden])) .hud { visibility: hidden; }
+body:has(.s02-stage[data-phase='ready']:not([hidden])) header { visibility: visible; }
+body:has(.s02-stage[data-phase='ready']:not([hidden])) header { z-index: 12; }
+body:has(.s02-stage[data-bunker-ready='true']:not([hidden])) #S03 .scene-content { z-index: 6; }
+.s02-sound {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 12;
+  padding: .5rem;
+  border: 0;
+  background: rgb(0 0 0 / .65);
+  color: #d8c8aa;
+  font: .65rem 'IBM Plex Mono', monospace;
+  cursor: pointer;
+}
+.s02-sound--concealed:not(:focus-visible) {
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 #S02 { border-top: 0; }
 @media (max-width: 767px) {
   .s02-stage { --rail-width: 22px; }
   .s02-bunker { object-position: 50% 58%; }
+  .s02-light-floor { height: 70px; filter: blur(6px); }
+  .s02-light-haze { height: 36px; filter: blur(5px); }
   .s02-rail--left { border-left-width: 4px; }
   .s02-rail--right { border-right-width: 4px; }
   .s02-rail-groove { width: 6px; }

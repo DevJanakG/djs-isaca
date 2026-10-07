@@ -47,7 +47,7 @@ export default function World() {
   const { simple } = usePreferences()
   const { state } = useScrollState()
   // The opening sequence through the bunker shutter is entirely DOM-only.
-  if (state.active.id === 'S00' || state.active.id === 'S01' || state.active.id === 'S02') return null
+  if (state.active.id === 'S00' || state.active.id === 'S01' || state.active.id === 'S02' || state.active.id === 'S03') return null
   return <div className="world" aria-hidden="true">
     {simple ? <div className="static-placeholder">Static scene fallback</div> : <CanvasBoundary><Canvas dpr={[1, 1.5]} frameloop="demand" camera={{ position: [0, 0, 7], fov: 45 }} fallback={<p className="fallback">3D unavailable.</p>}><PlaceholderWorld /></Canvas></CanvasBoundary>}
   </div>
