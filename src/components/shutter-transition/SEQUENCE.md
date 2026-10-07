@@ -33,6 +33,14 @@ occludes it while a separate black exposure overlay and contrast change the
 visible light. Dust is clipped below the moving edge. Reduced motion omits
 jolts, vibration, dust travel and the camera step while preserving reveal timing.
 
+Dust uses 16 fixed DOM motes (7 on mobile), sized 1.1–2.8px with a warm-grey
+color and subtle blur. Independent CSS drift loops last 8–18 seconds, moving
+only 3–8px sideways and 12–24px upward per cycle. Fades hide each loop reset.
+A feathered central light mask excludes dark corners; the shutter-driven clip
+expands the illuminated vertical region. Hidden scenes/tabs pause drift, and
+reduced motion renders stationary motes. No particle canvas or extra GSAP
+timeline is used.
+
 ## S03 contract
 
 Completion emits `hunt:s02-complete` with `{ duration: 6, nextScene: 'S03',

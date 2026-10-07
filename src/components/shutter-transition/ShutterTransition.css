@@ -105,13 +105,34 @@
   background: #d8b16b;
   opacity: .65;
 }
-.s02-dust-light { z-index: 4; overflow: hidden; }
+.s02-dust-light {
+  z-index: 4;
+  overflow: hidden;
+  opacity: 0;
+  clip-path: inset(100% 0 0);
+  /* Feather the warm central light volume independently of the shutter clip.
+     Dark corners and the cold room perimeter never carry a dust field. */
+  mask-image: radial-gradient(ellipse 38% 90% at 50% 100%, #000 12%, rgb(0 0 0 / .7) 45%, transparent 80%);
+}
 .s02-dust-light i {
   position: absolute;
   display: block;
   border-radius: 50%;
-  background: #e5c17d;
-  filter: blur(.6px);
+  background: #d2cbb9;
+  opacity: 0;
+  filter: blur(.65px);
+  animation: s02-dust-drift 12s linear infinite;
+  animation-play-state: paused;
+}
+.s02-stage:is([data-phase='playing'], [data-phase='ready']) .s02-dust-light i { animation-play-state: running; }
+.s02-stage:is([hidden], [data-dust-paused='true']) .s02-dust-light i { animation-play-state: paused; }
+@keyframes s02-dust-drift {
+  0% { opacity: 0; transform: translate(0, 0); }
+  20%, 75% { opacity: var(--mote-opacity); }
+  100% { opacity: 0; transform: translate(var(--drift-x), var(--drift-y)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s02-dust-light i { animation: none; opacity: var(--mote-opacity); }
 }
 
 /* Only the curtain translates; this aperture clips it behind the housing. */
@@ -288,6 +309,6 @@ body:has(.s02-stage[data-bunker-ready='true']:not([hidden])) #S03 .scene-content
   .s02-rail--left { border-left-width: 4px; }
   .s02-rail--right { border-right-width: 4px; }
   .s02-rail-groove { width: 6px; }
-  .s02-dust-light i:nth-child(n + 5) { display: none; }
+  .s02-dust-light i:nth-child(n + 8) { display: none; }
   .s02-grain { opacity: .01; }
 }

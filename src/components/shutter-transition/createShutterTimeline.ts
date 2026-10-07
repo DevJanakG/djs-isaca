@@ -113,7 +113,6 @@ export function createShutterTimeline(root: HTMLElement, options: {
     timeline.to(mechanics, { jolt: -3, duration: .045 }, 4.2)
       .to(mechanics, { jolt: -2, duration: .055 }, 4.245)
       .to(mechanics, { jolt: 0, duration: .08 }, 4.3)
-      .to(select('.s02-dust-light i'), { y: -10, duration: 3.3 }, .9)
   }
 
   timeline.to(levels, { motor: 0, groan: 0, duration: .18, onUpdate: syncVolumes }, 4.2)
